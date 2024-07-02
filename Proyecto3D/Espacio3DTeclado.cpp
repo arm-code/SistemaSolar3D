@@ -17,6 +17,7 @@ void dibujarTierra();
 void dibujarPlanetas();
 void dibujarSol();
 void dibujarOrbita(float radio);
+void dibujarTexto(const char* texto, float x, float y, float z);
 
 float angle = 0.0;
 float translateX = 0.0;
@@ -145,6 +146,8 @@ void dibujarLuna(float angleTierra) {
     glTranslatef(3.844, 0.0, 0.0); // Distancia promedio de la Luna a la Tierra en escala
     glColor3f(0.8, 0.8, 0.8);
     glutSolidSphere(0.2724, 50, 50);
+    // Dibujar el nombre "Luna"
+    dibujarTexto("Luna", 0.3, 0.3, 0.0);
     glPopMatrix();
 }
 
@@ -183,6 +186,7 @@ void dibujarPlanetas() {
         Color color = codificarColor(planetas[i].color);
         glColor3f(color.r, color.g, color.b);
         glutSolidSphere(planetas[i].tamano / 5.0, 50, 50);
+        dibujarTexto(planetas[i].nombre, planetas[i].tamano / 5.0, 0.0, 0.0);
         if (strcmp(planetas[i].nombre, "Tierra") == 0) {
             dibujarLuna(angle);
         }
@@ -215,4 +219,11 @@ Color codificarColor(const std::string& hexValue) {
     resultado.b = valor_ingresado_3 / 255.0f;
 
     return resultado;
+}
+
+void dibujarTexto(const char* texto, float x, float y, float z) {
+    glRasterPos3f(x, y, z);
+    for (const char* c = texto; *c != '\0'; ++c) {
+        glutBitmapCharacter(GLUT_BITMAP_HELVETICA_12, *c);
+    }
 }
