@@ -20,6 +20,9 @@ void dibujarOrbita(float radio);
 void dibujarCuadricula();
 void dibujarEjes();
 void Luz();
+=======
+void dibujarTexto(const char* texto, float x, float y, float z);
+
 
 float angle = 0.0;
 float translateX = 0.0;
@@ -42,13 +45,13 @@ void display_cb(void) {
     //glTranslatef(translateX, translateY, 0.0);
     //glScalef(zoom, zoom, zoom);
 
-    gluLookAt(cameraX, cameraY, cameraZ / zoom,  // Posici髇 de la c醡ara
-        cameraX, cameraY, 0.0,            // Punto al que mira la c醡ara
-        0.0, 1.0, 0.0);                   // Vector que define la direcci髇 hacia arriba
+    gluLookAt(cameraX, cameraY, cameraZ / zoom,  // Posici贸n de la c谩mara
+        cameraX, cameraY, 0.0,            // Punto al que mira la c谩mara
+        0.0, 1.0, 0.0);                   // Vector que define la direcci贸n hacia arriba
 
     // Ponemos la luz al sol
-    // Posici髇 de la luz en la posici髇 del sol
-    GLfloat posicionLuz[] = { 1.0, 1.0, 1.0, 1.0 };  // Ajusta la posici髇 seg鷑 sea necesario
+    // Posici贸n de la luz en la posici贸n del sol
+    GLfloat posicionLuz[] = { 1.0, 1.0, 1.0, 1.0 };  // Ajusta la posici贸n seg煤n sea necesario
     glLightfv(GL_LIGHT0, GL_POSITION, posicionLuz);
 
     // Aplicar rotaciones
@@ -145,6 +148,8 @@ void dibujarLuna(float angleTierra) {
     glTranslatef(3.844, 0.0, 0.0); // Distancia promedio de la Luna a la Tierra en escala
     glColor3f(0.8, 0.8, 0.8);
     glutSolidSphere(0.2724, 50, 50);
+    // Dibujar el nombre "Luna"
+    dibujarTexto("Luna", 0.3, 0.3, 0.0);
     glPopMatrix();
 }
 
@@ -183,7 +188,7 @@ void dibujarPlanetas() {
         {"Saturno", 1433.4, 12.1200, "808080"},
         {"Urano", 2872.5, 5.1118, "ADD8E6"},
         {"Neptuno", 4495.1, 4.9528, "014BA0"},
-        {"Plut髇", 5906.4, 0.237, "ADD8E6"}
+        {"Plut贸n", 5906.4, 0.237, "ADD8E6"}
     };
 
     for (int i = 0; i < 9; ++i) {
@@ -194,6 +199,7 @@ void dibujarPlanetas() {
         Color color = codificarColor(planetas[i].color);
         glColor3f(color.r, color.g, color.b);
         glutSolidSphere(planetas[i].tamano / 5.0, 50, 50);
+        dibujarTexto(planetas[i].nombre, planetas[i].tamano / 5.0, 0.0, 0.0);
         if (strcmp(planetas[i].nombre, "Tierra") == 0) {
             dibujarLuna(angle);
         }
@@ -227,8 +233,9 @@ Color codificarColor(const std::string& hexValue) {
 
     return resultado;
 }
+
 void dibujarCuadricula() {
-    glColor3f(0.3, 0.3, 0.3); // Color gris para la cuadr韈ula
+    glColor3f(0.3, 0.3, 0.3); // Color gris para la cuadr铆cula
     for (int i = -1000; i <= 1000; i += 10) {
         glVertex3i(i, 0, -1000);
         glVertex3i(i, 0, 1000);
@@ -257,10 +264,10 @@ void dibujarEjes() {
 }
 
 void Luz() {
-    // Configuraci髇 de la luz
+    // Configuraci贸n de la luz
     GLfloat luzDifusa[] = { 1.0, 1.0, 1.0, 1.0 };  // Color difuso de la luz (blanco)
     GLfloat luzEspecular[] = { 1.0, 1.0, 1.0, 1.0 };  // Color especular de la luz (blanco)
-    GLfloat posicionLuz[] = { 0.0, 0.0, 0.0, 1.0 };  // Posici髇 de la luz (inicialmente en el origen)
+    GLfloat posicionLuz[] = { 0.0, 0.0, 0.0, 1.0 };  // Posici贸n de la luz (inicialmente en el origen)
 
     glLightfv(GL_LIGHT0, GL_DIFFUSE, luzDifusa);
     glLightfv(GL_LIGHT0, GL_SPECULAR, luzEspecular);
@@ -271,4 +278,11 @@ void Luz() {
     glEnable(GL_COLOR_MATERIAL);  // Permite que los colores del material se definan mediante glColor
     glColorMaterial(GL_FRONT, GL_AMBIENT_AND_DIFFUSE);  // Afecta a los materiales ambiente y difuso
 
+
+
+void dibujarTexto(const char* texto, float x, float y, float z) {
+    glRasterPos3f(x, y, z);
+    for (const char* c = texto; *c != '\0'; ++c) {
+        glutBitmapCharacter(GLUT_BITMAP_HELVETICA_12, *c);
+    }
 }
