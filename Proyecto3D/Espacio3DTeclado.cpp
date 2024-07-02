@@ -12,11 +12,14 @@ struct Color {
 
 Color codificarColor(const std::string& hexValue);
 
-void dibujarLuna();
+void dibujarLuna(float angleTierra);
 void dibujarTierra();
 void dibujarPlanetas();
 void dibujarSol();
 void dibujarOrbita(float radio);
+void dibujarCuadricula();
+void dibujarEjes();
+void Luz();
 
 float angle = 0.0;
 float translateX = 0.0;
@@ -27,51 +30,45 @@ float angleX = 0.0;
 float angleY = 0.0;
 float angleZ = 0.0;
 
+float cameraX = 0.0;
+float cameraY = 0.0;
+float cameraZ = 1000.0;
+
 void display_cb(void) {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     glLoadIdentity();
-    glTranslatef(translateX, translateY, 0.0);
-    glScalef(zoom, zoom, zoom);
+
+    //glTranslatef(translateX, translateY, 0.0);
+    //glScalef(zoom, zoom, zoom);
+
+    gluLookAt(cameraX, cameraY, cameraZ / zoom,  // Posición de la cámara
+        cameraX, cameraY, 0.0,            // Punto al que mira la cámara
+        0.0, 1.0, 0.0);                   // Vector que define la dirección hacia arriba
+
+    // Ponemos la luz al sol
+    // Posición de la luz en la posición del sol
+    GLfloat posicionLuz[] = { 1.0, 1.0, 1.0, 1.0 };  // Ajusta la posición según sea necesario
+    glLightfv(GL_LIGHT0, GL_POSITION, posicionLuz);
 
     // Aplicar rotaciones
     glRotatef(angleX, 1.0, 0.0, 0.0);
     glRotatef(angleY, 0.0, 1.0, 0.0);
-    glRotatef(angleZ, 0.0, 0.0, 1.0);
+    glRotatef(angleZ, 0.0, 0.0, 1.0);   
 
-    glBegin(GL_LINES);
+    // Ejes
+    dibujarEjes();
 
-    // Ejes y cuadrícula
-    glColor3f(1.0, 0.0, 1.0); // color rosa    
-    glVertex3i(0, 0, -1000);
-    glVertex3i(0, 0, 1000);
+    //dibujarCuadricula();
 
-    glColor3f(1.0, 0.0, 0.0); // color rojo
-    glVertex3i(-1000, 0, 0);
-    glVertex3i(1000, 0, 0);
-
-    glColor3f(0.0, 1.0, 0.0); // color verde
-    glVertex3i(0, -1000, 0);
-    glVertex3i(0, 1000, 0);
-
-    glColor3f(0.0, 0.0, 1.0); // color azul
-    glVertex3i(0, 0, -1000);
-    glVertex3i(0, 0, 1000);
-
-    glColor3f(0.3, 0.3, 0.3); // Color gris para la cuadrícula
-    for (int i = -1000; i <= 1000; i += 10) {
-        glVertex3i(i, 0, -1000);
-        glVertex3i(i, 0, 1000);
-        glVertex3i(-1000, 0, i);
-        glVertex3i(1000, 0, i);
-    }
-
+    
     glEnd();
-
     dibujarSol();
+    glEnd();
     dibujarPlanetas();
-
+    
     glutSwapBuffers();
+    
 }
 
 void teclado_cb(GLubyte key, GLint x, GLint y) {
@@ -92,10 +89,10 @@ void teclado_cb(GLubyte key, GLint x, GLint y) {
 
 void special_cb(int key, int x, int y) {
     switch (key) {
-    case GLUT_KEY_LEFT: translateX += 10.0; break;
-    case GLUT_KEY_RIGHT: translateX -= 10.0; break;
-    case GLUT_KEY_UP: translateY += 10.0; break;
-    case GLUT_KEY_DOWN: translateY -= 10.0; break;
+    case GLUT_KEY_LEFT: cameraX += 10.0; break;
+    case GLUT_KEY_RIGHT: cameraX -= 10.0; break;
+    case GLUT_KEY_UP: cameraY -= 10.0; break;
+    case GLUT_KEY_DOWN: cameraY += 10.0; break;
     default: break;
     }
     glutPostRedisplay();
@@ -105,9 +102,12 @@ void inicializacion(void) {
     glClearColor(0.0, 0.0, 0.0, 0.0);
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-    glOrtho(-1000.0, 1000.0, -1000.0, 1000.0, -1000.0, 1000.0);
+    //glOrtho(-1000.0, 1000.0, -1000.0, 1000.0, -1000.0, 1000.0);
+    gluPerspective(45.0, 1.0, 0.1, 10000.0);
     glMatrixMode(GL_MODELVIEW);
     glEnable(GL_DEPTH_TEST);
+
+    Luz();
 }
 
 void idle_cb() {
@@ -149,8 +149,19 @@ void dibujarLuna(float angleTierra) {
 }
 
 void dibujarSol() {
+
+    GLfloat matAmbiente[] = { 1.0, 1.0, 1.0, 1.0 };  // Color ambiente (amarillo)
+    GLfloat matDifusa[] = { 1.0, 1.0, 1.0, 1.0 };    // Color difuso (amarillo)
+    GLfloat matEspecular[] = { 1.0, 1.0, 1.0, 1.0 }; // Color especular (blanco)
+    GLfloat brillo[] = { 25.0 };                     // Brillo
+
+    glMaterialfv(GL_FRONT, GL_AMBIENT, matAmbiente);
+    glMaterialfv(GL_FRONT, GL_DIFFUSE, matDifusa);
+    glMaterialfv(GL_FRONT, GL_SPECULAR, matEspecular);
+    glMaterialfv(GL_FRONT, GL_SHININESS, brillo);
+
     glPushMatrix();
-    glColor3f(1.0, 1.0, 0.0);
+    glColor3f(1.0, 1.0, 1.0);
     glutSolidSphere(10.0, 50, 50);
     glPopMatrix();
 }
@@ -215,4 +226,49 @@ Color codificarColor(const std::string& hexValue) {
     resultado.b = valor_ingresado_3 / 255.0f;
 
     return resultado;
+}
+void dibujarCuadricula() {
+    glColor3f(0.3, 0.3, 0.3); // Color gris para la cuadrícula
+    for (int i = -1000; i <= 1000; i += 10) {
+        glVertex3i(i, 0, -1000);
+        glVertex3i(i, 0, 1000);
+        glVertex3i(-1000, 0, i);
+        glVertex3i(1000, 0, i);
+    }
+}
+
+void dibujarEjes() {
+    glBegin(GL_LINES);
+    glColor3f(1.0, 0.0, 1.0); // color rosa    
+    glVertex3i(0, 0, -1000);
+    glVertex3i(0, 0, 1000);
+
+    glColor3f(1.0, 0.0, 0.0); // color rojo
+    glVertex3i(-1000, 0, 0);
+    glVertex3i(1000, 0, 0);
+
+    glColor3f(0.0, 1.0, 0.0); // color verde
+    glVertex3i(0, -1000, 0);
+    glVertex3i(0, 1000, 0);
+
+    glColor3f(0.0, 0.0, 1.0); // color azul
+    glVertex3i(0, 0, -1000);
+    glVertex3i(0, 0, 1000);
+}
+
+void Luz() {
+    // Configuración de la luz
+    GLfloat luzDifusa[] = { 1.0, 1.0, 1.0, 1.0 };  // Color difuso de la luz (blanco)
+    GLfloat luzEspecular[] = { 1.0, 1.0, 1.0, 1.0 };  // Color especular de la luz (blanco)
+    GLfloat posicionLuz[] = { 0.0, 0.0, 0.0, 1.0 };  // Posición de la luz (inicialmente en el origen)
+
+    glLightfv(GL_LIGHT0, GL_DIFFUSE, luzDifusa);
+    glLightfv(GL_LIGHT0, GL_SPECULAR, luzEspecular);
+    glLightfv(GL_LIGHT0, GL_POSITION, posicionLuz);
+
+    glEnable(GL_LIGHTING);
+    glEnable(GL_LIGHT0);
+    glEnable(GL_COLOR_MATERIAL);  // Permite que los colores del material se definan mediante glColor
+    glColorMaterial(GL_FRONT, GL_AMBIENT_AND_DIFFUSE);  // Afecta a los materiales ambiente y difuso
+
 }
