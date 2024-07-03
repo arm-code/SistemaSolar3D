@@ -20,7 +20,6 @@ void dibujarOrbita(float radio);
 void dibujarCuadricula();
 void dibujarEjes();
 void Luz();
-=======
 void dibujarTexto(const char* texto, float x, float y, float z);
 
 
@@ -278,7 +277,7 @@ void Luz() {
     glEnable(GL_COLOR_MATERIAL);  // Permite que los colores del material se definan mediante glColor
     glColorMaterial(GL_FRONT, GL_AMBIENT_AND_DIFFUSE);  // Afecta a los materiales ambiente y difuso
 
-
+}
 
 void dibujarTexto(const char* texto, float x, float y, float z) {
     glRasterPos3f(x, y, z);
