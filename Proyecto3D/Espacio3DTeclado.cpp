@@ -4,10 +4,32 @@
 #include <cstdlib>
 #include <string>
 
+#include <iostream>
+#include <fstream>
+#include <stdexcept>
+
+#ifdef __APPLE__
+#  include <GLUT/glut.h>
+#  include <OpenGL/glext.h>
+#else
+#  include <GL/glut.h>
+#  include <GL/glext.h>
+#endif
+
+using namespace std;
+
 struct Color {
     float r;
     float g;
     float b;
+};
+
+// Struct de archivo bitmap.
+struct BitMapFile
+{
+    int sizeX;
+    int sizeY;
+    unsigned char* data;
 };
 
 Color codificarColor(const std::string& hexValue);
@@ -16,12 +38,15 @@ void dibujarLuna(float angleTierra);
 void dibujarTierra();
 void dibujarPlanetas();
 void dibujarSol();
+void dibujarSol2();
 void dibujarOrbita(float radio);
 void dibujarCuadricula();
 void dibujarEjes();
 void Luz();
 void dibujarTexto(const char* texto, float x, float y, float z);
 
+// Globals.
+static unsigned int texture[1]; // �ndice de textura.
 
 float angle = 0.0;
 float translateX = 0.0;
@@ -36,10 +61,82 @@ float cameraX = 0.0;
 float cameraY = 0.0;
 float cameraZ = 1000.0;
 
+// Rutina para leer un archivo bitmap.
+// Funciona solo para archivos bmp sin comprimir de 24 bits.
+BitMapFile* getBMPData(string filename)
+{
+    BitMapFile* bmp = new BitMapFile;
+    unsigned int size, offset, headerSize;
+
+    // Leer nombre de archivo de entrada.
+    ifstream infile(filename.c_str(), ios::binary);
+    if (!infile) {
+        cerr << "Error al abrir el archivo BMP: " << filename << endl;
+        exit(1);
+    }
+
+    // Obtener el punto de inicio de los datos de la imagen.
+    infile.seekg(10);
+    infile.read((char*)&offset, 4);
+
+    // Obtener el tama�o del encabezado del bitmap.
+    infile.read((char*)&headerSize, 4);
+
+    // Obtener valores de ancho y alto en el encabezado del bitmap.
+    infile.seekg(18);
+    infile.read((char*)&bmp->sizeX, 4);
+    infile.read((char*)&bmp->sizeY, 4);
+
+    // Asignar buffer para la imagen.
+    size = bmp->sizeX * bmp->sizeY * 3; // El tama�o debe ser tama�oX * tama�oY * 3 (para RGB)
+    bmp->data = new unsigned char[size];
+
+    // Leer datos del bitmap.
+    infile.seekg(offset);
+    infile.read((char*)bmp->data, size);
+
+    // Revertir el color de bgr a rgb.
+    int temp;
+    for (int i = 0; i < size; i += 3)
+    {
+        temp = bmp->data[i];
+        bmp->data[i] = bmp->data[i + 2];
+        bmp->data[i + 2] = temp;
+    }
+
+    infile.close();
+    return bmp;
+}
+
+// Cargar textura externa.
+void loadExternalTextures()
+{
+    // Almacenamiento local para datos de imagen bmp.
+    BitMapFile* image = getBMPData("sol.bmp");
+
+    // Activar el �ndice de textura texture[0]. 
+    glBindTexture(GL_TEXTURE_2D, texture[0]);
+
+    // Establecer par�metros de textura para envolver.
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+    // Establecer par�metros de textura para filtrar.
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+    // Especificar una imagen como la textura a enlazar con el �ndice de textura actualmente activo.
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, image->sizeX, image->sizeY, 0,
+        GL_RGB, GL_UNSIGNED_BYTE, image->data);
+
+    delete[] image->data;
+    delete image;
+}
+
 void display_cb(void) {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    glLoadIdentity();
+    glLoadIdentity();    
 
     //glTranslatef(translateX, translateY, 0.0);
     //glScalef(zoom, zoom, zoom);
@@ -53,21 +150,26 @@ void display_cb(void) {
     GLfloat posicionLuz[] = { 1.0, 1.0, 1.0, 1.0 };  // Ajusta la posición según sea necesario
     glLightfv(GL_LIGHT0, GL_POSITION, posicionLuz);
 
+
     // Aplicar rotaciones
     glRotatef(angleX, 1.0, 0.0, 0.0);
     glRotatef(angleY, 0.0, 1.0, 0.0);
     glRotatef(angleZ, 0.0, 0.0, 1.0);   
 
-    // Ejes
-    dibujarEjes();
+   
 
     //dibujarCuadricula();
 
     
     glEnd();
-    dibujarSol();
-    glEnd();
+
+    dibujarSol2();
+
+    //glEnd();
+
     dibujarPlanetas();
+    // Ejes
+    dibujarEjes();
     
     glutSwapBuffers();
     
@@ -108,6 +210,16 @@ void inicializacion(void) {
     gluPerspective(45.0, 1.0, 0.1, 10000.0);
     glMatrixMode(GL_MODELVIEW);
     glEnable(GL_DEPTH_TEST);
+
+
+    // Crear el array de �ndices de textura.
+    glGenTextures(1, texture);
+
+    // Cargar textura externa.
+    loadExternalTextures();
+
+    // Especificar c�mo los valores de textura se combinan con los valores de color de superficie actuales.
+    glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
 
     Luz();
 }
@@ -154,20 +266,41 @@ void dibujarLuna(float angleTierra) {
 
 void dibujarSol() {
 
-    GLfloat matAmbiente[] = { 1.0, 1.0, 1.0, 1.0 };  // Color ambiente (amarillo)
-    GLfloat matDifusa[] = { 1.0, 1.0, 1.0, 1.0 };    // Color difuso (amarillo)
-    GLfloat matEspecular[] = { 1.0, 1.0, 1.0, 1.0 }; // Color especular (blanco)
-    GLfloat brillo[] = { 25.0 };                     // Brillo
+    //GLfloat matAmbiente[] = { 1.0, 1.0, 1.0, 1.0 };  // Color ambiente (amarillo)
+    //GLfloat matDifusa[] = { 1.0, 1.0, 1.0, 1.0 };    // Color difuso (amarillo)
+    //GLfloat matEspecular[] = { 1.0, 1.0, 1.0, 1.0 }; // Color especular (blanco)
+    //GLfloat brillo[] = { 25.0 };                     // Brillo
 
-    glMaterialfv(GL_FRONT, GL_AMBIENT, matAmbiente);
-    glMaterialfv(GL_FRONT, GL_DIFFUSE, matDifusa);
-    glMaterialfv(GL_FRONT, GL_SPECULAR, matEspecular);
-    glMaterialfv(GL_FRONT, GL_SHININESS, brillo);
+    //glMaterialfv(GL_FRONT, GL_AMBIENT, matAmbiente);
+    //glMaterialfv(GL_FRONT, GL_DIFFUSE, matDifusa);
+    //glMaterialfv(GL_FRONT, GL_SPECULAR, matEspecular);
+    //glMaterialfv(GL_FRONT, GL_SHININESS, brillo);
 
     glPushMatrix();
     glColor3f(1.0, 1.0, 1.0);
     glutSolidSphere(10.0, 50, 50);
     glPopMatrix();
+}
+
+void dibujarSol2() {
+    
+    //glLoadIdentity();
+    glEnable(GL_TEXTURE_2D);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    
+
+    // Activar la textura.
+    glBindTexture(GL_TEXTURE_2D, texture[0]);
+
+    // Dibujar una esfera texturizada.
+    GLUquadric* quad;
+    quad = gluNewQuadric();
+    gluQuadricTexture(quad, GL_TRUE);
+    gluSphere(quad, 10.0, 50, 50);
+    //gluDeleteQuadric(quad);
+
+    glDisable(GL_TEXTURE_2D); 
 }
 
 void dibujarPlanetas() {
