@@ -158,6 +158,8 @@ void display_cb(void) {
 
    
 
+    // Ejes
+    dibujarEjes();
     //dibujarCuadricula();
 
     
@@ -168,8 +170,7 @@ void display_cb(void) {
     //glEnd();
 
     dibujarPlanetas();
-    // Ejes
-    dibujarEjes();
+    
     
     glutSwapBuffers();
     
@@ -283,12 +284,11 @@ void dibujarSol() {
 }
 
 void dibujarSol2() {
-    
-    //glLoadIdentity();
-    glEnable(GL_TEXTURE_2D);
+
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    
+    //glLoadIdentity();
+    glEnable(GL_TEXTURE_2D);
 
     // Activar la textura.
     glBindTexture(GL_TEXTURE_2D, texture[0]);
