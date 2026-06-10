@@ -70,16 +70,43 @@ export class PlanetManager {
 
         let planetMaterial: THREE.Material;
 
-        try {
-            if (planetData.texture) {
-                const texture = this.textureLoader.load(planetData.texture);
-                planetMaterial = new THREE.MeshPhongMaterial({ map: texture });
-            } else {
-                planetMaterial = new THREE.MeshPhongMaterial({ color: planetData.color });
-            }
-        } catch (error) {
-            console.warn(`No se pudo cargar textura de ${planetData.name}:`, error);
-            planetMaterial = new THREE.MeshPhongMaterial({ color: planetData.color });
+        // ✅ CARGAR TEXTURA CON MEJOR MANEJO
+        if (planetData.texture) {
+            const texture = this.textureLoader.load(
+                planetData.texture,
+                // onLoad callback
+                () => {
+                    console.log(`✅ Textura cargada: ${planetData.name}`);
+                },
+                // onProgress callback
+                undefined,
+                // onError callback
+                (error) => {
+                    console.error(`❌ Error cargando ${planetData.name}:`, error);
+                    // Fallback a color
+                    planetMaterial = new THREE.MeshPhongMaterial({
+                        color: planetData.color,
+                        emissive: 0x333333,
+                    });
+                }
+            );
+
+            // Configurar textura para mejor visualización
+            texture.minFilter = THREE.LinearMipmapLinearFilter;
+            texture.magFilter = THREE.LinearFilter;
+
+            planetMaterial = new THREE.MeshPhongMaterial({
+                map: texture,
+                shininess: 30,
+                side: THREE.FrontSide,
+            });
+
+            console.log(`📦 Cargando textura para ${planetData.name}: ${planetData.texture}`);
+        } else {
+            planetMaterial = new THREE.MeshPhongMaterial({
+                color: planetData.color,
+                emissive: 0x333333,
+            });
         }
 
         const planet = new THREE.Mesh(planetGeometry, planetMaterial);

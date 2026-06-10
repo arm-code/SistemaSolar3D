@@ -68,18 +68,18 @@ export class SceneManager {
 
         const { ambient, sun, fill } = LIGHTS_CONFIG;
 
-        // Luz ambiental
-        const ambientLight = new THREE.AmbientLight(ambient.color, ambient.intensity);
+        // Luz ambiental - AUMENTAR intensidad
+        const ambientLight = new THREE.AmbientLight(ambient.color, 0.6);  // ← Cambiar de 0.4 a 0.6
         this.objects.scene.add(ambientLight);
 
-        // Luz puntual en el Sol
-        const sunLight = new THREE.PointLight(sun.color, sun.intensity, sun.distance);
+        // Luz puntual en el Sol - AUMENTAR intensidad
+        const sunLight = new THREE.PointLight(sun.color, 3, 5000);  // ← Cambiar de 2 a 3
         sunLight.position.set(0, 0, 0);
         sunLight.castShadow = true;
         this.objects.scene.add(sunLight);
 
-        // Luz de relleno
-        const fillLight = new THREE.DirectionalLight(fill.color, fill.intensity);
+        // Luz de relleno - AUMENTAR
+        const fillLight = new THREE.DirectionalLight(fill.color, 0.4);  // ← Cambiar de 0.2 a 0.4
         fillLight.position.set(100, 100, 100);
         this.objects.scene.add(fillLight);
     }

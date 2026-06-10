@@ -176,10 +176,11 @@ export const CAMERA_CONFIG = {
 };
 
 // Configuración de luces
+// Configuración de luces
 export const LIGHTS_CONFIG = {
-    ambient: { color: 0xffffff, intensity: 0.4 },
-    sun: { color: 0xfdb813, intensity: 2, distance: 5000 },
-    fill: { color: 0xffffff, intensity: 0.2 },
+    ambient: { color: 0xffffff, intensity: 0.6 },   // ← Aumentado de 0.4
+    sun: { color: 0xfdb813, intensity: 2.5, distance: 5000 },  // ← Aumentado de 2
+    fill: { color: 0xffffff, intensity: 0.4 },     // ← Aumentado de 0.2
 };
 
 // Colores UI
