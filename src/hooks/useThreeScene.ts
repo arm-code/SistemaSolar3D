@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import * as THREE from 'three';
 import { SceneManager } from '@/lib/three/SceneManager';
 import { PlanetManager } from '@/lib/three/PlanetManager';
@@ -11,6 +11,8 @@ export function useThreeScene(containerRef: React.RefObject<HTMLDivElement | nul
     const cameraControlsRef = useRef<CameraControls | null>(null);
     const raycastRef = useRef<THREE.Raycaster>(new THREE.Raycaster());
     const mouseRef = useRef<THREE.Vector2>(new THREE.Vector2());
+    const animationIdRef = useRef<number | null>(null);
+    const isInitializedRef = useRef(false);
 
     const [sceneState, setSceneState] = useState<SceneState>({
         isPlaying: true,
@@ -19,62 +21,85 @@ export function useThreeScene(containerRef: React.RefObject<HTMLDivElement | nul
         time: 0,
     });
 
-    // Inicializar escena
+    // Inicializar escena solo una vez
     useEffect(() => {
-        if (!containerRef.current) return;
+        if (isInitializedRef.current || !containerRef.current) return;
 
-        // Crear gerentes
-        const sceneManager = new SceneManager(containerRef.current);
-        const scene = sceneManager.getScene();
+        isInitializedRef.current = true;
 
-        if (!scene) return;
+        console.log('🚀 Inicializando escena...');
 
-        const planetManager = new PlanetManager(scene);
-        planetManager.createAllPlanets();
+        try {
+            // Crear gerentes
+            const sceneManager = new SceneManager(containerRef.current);
+            const scene = sceneManager.getScene();
 
-        const camera = sceneManager.getCamera();
-        const renderer = sceneManager.getRenderer();
-
-        if (!camera || !renderer) return;
-
-        const cameraControls = new CameraControls(camera, renderer);
-
-        sceneManagerRef.current = sceneManager;
-        planetManagerRef.current = planetManager;
-        cameraControlsRef.current = cameraControls;
-
-        // Loop de animación
-        let animationId: number;
-
-        const animate = () => {
-            animationId = requestAnimationFrame(animate);
-
-            if (sceneState.isPlaying) {
-                planetManager.update(sceneState.speedMultiplier);
+            if (!scene) {
+                console.error('❌ No se pudo crear la escena');
+                return;
             }
 
-            sceneManager.render();
-        };
+            const planetManager = new PlanetManager(scene);
+            planetManager.createAllPlanets();
 
-        animate();
+            const camera = sceneManager.getCamera();
+            const renderer = sceneManager.getRenderer();
 
-        // Limpiar
-        return () => {
-            cancelAnimationFrame(animationId);
-            sceneManager.dispose();
-            cameraControls.dispose();
-            planetManager.dispose();
-        };
-    }, []);
+            if (!camera || !renderer) {
+                console.error('❌ No se pudo obtener cámara o renderer');
+                return;
+            }
 
-    // Actualizar cuando cambia el estado
-    useEffect(() => {
-        if (planetManagerRef.current) {
-            // El estado se actualiza en el loop de animación
+            const cameraControls = new CameraControls(camera, renderer);
+
+            sceneManagerRef.current = sceneManager;
+            planetManagerRef.current = planetManager;
+            cameraControlsRef.current = cameraControls;
+
+            console.log('✅ Escena inicializada correctamente');
+
+            // Loop de animación
+            const animate = () => {
+                if (sceneManagerRef.current && planetManagerRef.current && sceneState.isPlaying) {
+                    planetManagerRef.current.update(sceneState.speedMultiplier);
+                }
+
+                sceneManagerRef.current?.render();
+                animationIdRef.current = requestAnimationFrame(animate);
+            };
+
+            animate();
+
+            // Limpiar al desmontar
+            return () => {
+                console.log('🧹 Limpiando escena...');
+
+                if (animationIdRef.current) {
+                    cancelAnimationFrame(animationIdRef.current);
+                }
+
+                sceneManagerRef.current?.dispose();
+                cameraControlsRef.current?.dispose();
+                planetManagerRef.current?.dispose();
+
+                sceneManagerRef.current = null;
+                planetManagerRef.current = null;
+                cameraControlsRef.current = null;
+                isInitializedRef.current = false;
+            };
+        } catch (error) {
+            console.error('❌ Error inicializando escena:', error);
+            isInitializedRef.current = false;
         }
+    }, [containerRef]); // Solo en montaje
+
+    // Actualizar estado de reproducción sin reinicializar
+    useEffect(() => {
+        if (!planetManagerRef.current) return;
+        // El estado se usa en el loop de animación
     }, [sceneState.isPlaying, sceneState.speedMultiplier]);
 
-    const handleCanvasClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    const handleCanvasClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
         const canvas = sceneManagerRef.current?.getRenderer()?.domElement;
         if (!canvas) return;
 
@@ -95,16 +120,16 @@ export function useThreeScene(containerRef: React.RefObject<HTMLDivElement | nul
                 selectedPlanet,
             }));
         }
-    };
+    }, []);
 
-    const togglePlayPause = () => {
+    const togglePlayPause = useCallback(() => {
         setSceneState((prev) => ({
             ...prev,
             isPlaying: !prev.isPlaying,
         }));
-    };
+    }, []);
 
-    const reset = () => {
+    const reset = useCallback(() => {
         cameraControlsRef.current?.reset();
         setSceneState((prev) => ({
             ...prev,
@@ -112,14 +137,14 @@ export function useThreeScene(containerRef: React.RefObject<HTMLDivElement | nul
             speedMultiplier: 1,
             selectedPlanet: null,
         }));
-    };
+    }, []);
 
-    const setSpeed = (speed: number) => {
+    const setSpeed = useCallback((speed: number) => {
         setSceneState((prev) => ({
             ...prev,
             speedMultiplier: speed,
         }));
-    };
+    }, []);
 
     return {
         sceneState,
