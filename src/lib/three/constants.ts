@@ -5,12 +5,13 @@ import { PlanetData, SunData } from '../types';
 export const SCALE = {
     position: 0.15,  // Escala las distancias
     size: 0.5,       // Escala los tamaños
-    time: 0.01,      // Escala el tiempo de simulación
+    time: 0.09,      // Escala el tiempo de simulación (5x más rápido)
 };
 
 // Datos del Sol
+// ✅ Sol reducido a 4.5 para que Mercurio (órbita en 8.685 u.) sea visible
 export const SUN: SunData = {
-    size: 10.0,
+    size: 4.5,
     color: 0xFDB813,
     texture: '/textures/sun.jpg',
     info: {
