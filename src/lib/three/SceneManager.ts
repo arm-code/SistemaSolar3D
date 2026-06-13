@@ -87,28 +87,45 @@ export class SceneManager {
     private addStars(): void {
         if (!this.objects.scene) return;
 
-        const starsGeometry = new THREE.BufferGeometry();
-        const starsMaterial = new THREE.PointsMaterial({
-            color: 0xffffff,
-            size: 100,
-            sizeAttenuation: true,
-        });
+        // Esfera gigante invertida con textura de estrellas (estilo skybox)
+        const starGeo = new THREE.SphereGeometry(30000, 64, 64);
 
-        const starsVertices: number[] = [];
-        for (let i = 0; i < 1000; i++) {
-            const x = (Math.random() - 0.5) * 40000;
-            const y = (Math.random() - 0.5) * 40000;
-            const z = (Math.random() - 0.5) * 40000;
-            starsVertices.push(x, y, z);
-        }
-
-        starsGeometry.setAttribute(
-            'position',
-            new THREE.BufferAttribute(new Float32Array(starsVertices), 3)
+        const textureLoader = new THREE.TextureLoader();
+        const starTex = textureLoader.load(
+            '/textures/stars.jpg',
+            () => console.log('✅ Textura de estrellas cargada'),
+            undefined,
+            (err) => {
+                console.warn('⚠️ No se pudo cargar stars.jpg, usando puntos aleatorios:', err);
+                this.addFallbackStars();
+            }
         );
 
-        const stars = new THREE.Points(starsGeometry, starsMaterial);
-        this.objects.scene.add(stars);
+        const starMat = new THREE.MeshBasicMaterial({
+            map: starTex,
+            side: THREE.BackSide, // Renderizar el interior de la esfera
+        });
+
+        const skybox = new THREE.Mesh(starGeo, starMat);
+        skybox.name = 'Starfield';
+        this.objects.scene!.add(skybox);
+    }
+
+    // Fallback: puntos aleatorios si la textura no carga
+    private addFallbackStars(): void {
+        if (!this.objects.scene) return;
+        const geo = new THREE.BufferGeometry();
+        const verts: number[] = [];
+        for (let i = 0; i < 3000; i++) {
+            verts.push(
+                (Math.random() - 0.5) * 50000,
+                (Math.random() - 0.5) * 50000,
+                (Math.random() - 0.5) * 50000
+            );
+        }
+        geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(verts), 3));
+        const mat = new THREE.PointsMaterial({ color: 0xffffff, size: 60, sizeAttenuation: true });
+        this.objects.scene.add(new THREE.Points(geo, mat));
     }
 
     private onWindowResize(): void {
