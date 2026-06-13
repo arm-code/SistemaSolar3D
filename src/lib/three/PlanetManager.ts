@@ -18,19 +18,20 @@ export class PlanetManager {
     createSun(): void {
         const geometry = new THREE.SphereGeometry(SUN.size, 50, 50);
 
-        let material: THREE.Material;
+        // Usar MeshBasicMaterial para que el Sol siempre brille sin depender de la luz
+        const texture = this.textureLoader.load(
+            SUN.texture,
+            () => console.log('✅ Textura cargada: Sol'),
+            undefined,
+            (error) => console.warn('⚠️ No se pudo cargar textura del Sol:', error)
+        );
 
-        try {
-            const texture = this.textureLoader.load(SUN.texture);
-            material = new THREE.MeshPhongMaterial({ map: texture });
-        } catch (error) {
-            console.warn('No se pudo cargar textura del Sol, usando color:', error);
-            material = new THREE.MeshPhongMaterial({ color: SUN.color });
-        }
+        const material = new THREE.MeshBasicMaterial({
+            map: texture,
+            color: SUN.color,
+        });
 
         const sun = new THREE.Mesh(geometry, material);
-        sun.castShadow = true;
-        sun.receiveShadow = true;
         sun.name = 'Sun';
 
         this.scene.add(sun);
@@ -112,6 +113,8 @@ export class PlanetManager {
         const planet = new THREE.Mesh(planetGeometry, planetMaterial);
         planet.castShadow = true;
         planet.receiveShadow = true;
+        // ✅ POSICIONAR el planeta en su distancia orbital sobre el eje X
+        planet.position.x = planetData.distance * SCALE.position;
         planet.userData = {
             name: planetData.name,
             distance: planetData.distance * SCALE.position,
@@ -139,9 +142,10 @@ export class PlanetManager {
     update(speedMultiplier: number = 1, deltaTime: number = 1): void {
         this.planets.forEach((planet) => {
             const speed = planet.data.speed * speedMultiplier * SCALE.time;
-            planet.group.rotation.z += speed * deltaTime;
+            // ✅ Rotar en eje Y para orbitar en el plano XZ (el correcto)
+            planet.group.rotation.y += speed * deltaTime;
 
-            // Rotación del planeta sobre su eje
+            // Rotación del planeta sobre su propio eje
             planet.mesh.rotation.y += 0.005 * speedMultiplier;
         });
 
