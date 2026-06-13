@@ -65,15 +65,15 @@ export class PlanetManager {
 
         // Remapear las UV del anillo para que la textura se aplique radialmente
         const pos = ringGeo.attributes.position as THREE.BufferAttribute;
-        const uv  = ringGeo.attributes.uv   as THREE.BufferAttribute;
-        const v3  = new THREE.Vector3();
+        const uv = ringGeo.attributes.uv as THREE.BufferAttribute;
+        const v3 = new THREE.Vector3();
         for (let i = 0; i < pos.count; i++) {
             v3.fromBufferAttribute(pos, i);
             const r = (v3.length() - innerR) / (outerR - innerR);
             uv.setXY(i, r, 1);
         }
 
-        const ringTex = this.loadTexture('/textures/saturn_ring_alpha.jpg', 'Anillos de Saturno');
+        const ringTex = this.loadTexture('/textures/saturn_ring_alpha.png', 'Anillos de Saturno');
         ringTex.minFilter = THREE.LinearFilter;
 
         const ringMat = new THREE.MeshBasicMaterial({
@@ -99,7 +99,7 @@ export class PlanetManager {
         const moonOrbitGroup = new THREE.Group();
         moonOrbitGroup.name = 'moon-orbit';
 
-        const moonSize   = planetSize * 0.27; // La Luna ≈ 27% del radio terrestre
+        const moonSize = planetSize * 0.27; // La Luna ≈ 27% del radio terrestre
         const moonOrbitR = planetSize * 3.0;  // Distancia orbital visual
 
         // Geometría y material de la Luna
@@ -218,7 +218,7 @@ export class PlanetManager {
     ): PlanetData | null {
         raycaster.setFromCamera(mouse, camera);
         const meshes = Array.from(this.planets.values()).map((p) => p.mesh);
-        const hits   = raycaster.intersectObjects(meshes);
+        const hits = raycaster.intersectObjects(meshes);
         if (hits.length > 0) {
             const hit = hits[0].object as THREE.Mesh;
             return Array.from(this.planets.values()).find((p) => p.mesh === hit)?.data ?? null;
