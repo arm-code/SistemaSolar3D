@@ -1,8 +1,51 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { SceneState, PlanetData } from '@/lib/types';
 import styles from '@/styles/canvas.module.css';
+
+// --- Hook: Contador de visitas global (Supabase via API Route) ---
+interface VisitState {
+    count: number | null;
+    loading: boolean;
+    error: boolean;
+}
+
+function useVisitCounter(): VisitState {
+    const [state, setState] = useState<VisitState>({
+        count: null,
+        loading: true,
+        error: false,
+    });
+
+    useEffect(() => {
+        let cancelled = false;
+
+        fetch('/api/visits')
+            .then((res) => {
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                return res.json();
+            })
+            .then((data: { count: number }) => {
+                if (!cancelled) {
+                    setState({ count: data.count, loading: false, error: false });
+                }
+            })
+            .catch((err) => {
+                console.warn('[VisitCounter] No se pudo obtener el conteo:', err);
+                if (!cancelled) {
+                    setState({ count: null, loading: false, error: true });
+                }
+            });
+
+        return () => {
+            cancelled = true;
+        };
+    }, []);
+
+    return state;
+}
+
 
 interface ControlPanelProps {
     sceneState: SceneState;
@@ -18,6 +61,7 @@ export function ControlPanel({
     onSpeedChange,
 }: ControlPanelProps) {
     const [showInfo, setShowInfo] = useState(true);
+    const { count, loading } = useVisitCounter();
 
     return (
         <div className={styles.controlPanel}>
@@ -30,6 +74,19 @@ export function ControlPanel({
                 >
                     ✕
                 </button>
+            </div>
+
+            {/* Contador de visitas global */}
+            <div className={styles.visitCounter}>
+                <span className={styles.visitIcon}>👁️</span>
+                <span className={styles.visitLabel}>Visitas totales</span>
+                {loading ? (
+                    <span className={styles.visitSkeleton} aria-label="Cargando visitas" />
+                ) : count !== null ? (
+                    <span className={styles.visitNumber}>
+                        {count.toLocaleString('es-MX')}
+                    </span>
+                ) : null}
             </div>
 
             {showInfo && (
